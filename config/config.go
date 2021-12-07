@@ -22,6 +22,7 @@ func SetUp(param ...string) *Config {
 	var cfg Config
 	vp := viper.New()
 	cfg.Vp = vp
+	vp.SetConfigType("yaml")
 	if len(param) == 2 {
 		vp.AddConfigPath(param[0])
 		vp.SetConfigName(param[1])
