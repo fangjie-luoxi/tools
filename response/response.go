@@ -135,3 +135,28 @@ func (r *Resp) getRespType(c *gin.Context) string {
 	}
 	return respTp
 }
+
+// Error 错误处理
+func Error(c *gin.Context, code int, err error) {
+	res := antdResponse{
+		Success:   false,
+		ErrorCode: strconv.Itoa(code),
+		ShowType:  4,
+		TraceId:   "",
+		Host:      c.ClientIP(),
+	}
+	if err != nil {
+		res.ErrorMessage = err.Error()
+	}
+	c.JSON(code, res)
+}
+
+// Success 成功返回
+func Success(c *gin.Context, code int, data interface{}) {
+	c.JSON(code, antdResponse{
+		Success: true,
+		Data:    data,
+		TraceId: "",
+		Host:    c.ClientIP(),
+	})
+}
