@@ -158,3 +158,17 @@ func Success(c *gin.Context, code int, data interface{}) {
 		Host:    c.ClientIP(),
 	})
 }
+
+// PageOK 分页数据处理
+func PageOK(c *gin.Context, data interface{}, count int64, offset int, limit int) {
+	c.JSON(http.StatusOK, antdResponse{
+		Success:  true,
+		Data:     data,
+		Total:    count,
+		Current:  offset/limit + 1,
+		PageSize: limit,
+		ShowType: 2,
+		TraceId:  "",
+		Host:     c.ClientIP(),
+	})
+}
