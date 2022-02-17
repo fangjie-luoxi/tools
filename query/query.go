@@ -11,6 +11,23 @@ import (
 	"gorm.io/gorm"
 )
 
+// Param 请求参数
+type Param struct {
+	Table     string `form:"table"`            // 要查询的表
+	Query     string `form:"query"`            // 条件查询 格式: 字段1:值1,字段2:值2 eg: Id:1,Post.Id:2
+	Or        string `form:"or"`               // 或查询 格式: 字段1:值1,字段2:值2 eg: Id:1,Post.Id:2
+	NOT       string `form:"not"`              // not条件查询 格式: 字段1:值1,字段2:值2 eg: Id:1,Post.Id:2
+	Fields    string `form:"fields"`           // 返回的字段 格式: 字段1,字段2
+	Sortby    string `form:"sortby"`           // 排序的字段 格式: 字段1,字段2
+	Order     string `form:"order"`            // 排序的方式 enum:desc:降序,asc:升序
+	OrderBy   string `form:"order_by"`         // 排序 格式: 字段1 desc,字段2 asc
+	Load      string `form:"load"`             // 加载关联  格式: 关联字段1,关联字段2 eg: User,Posts
+	Limit     int    `form:"limit,default=10"` // 返回的数据量
+	Page      int    `form:"page,default=1"`   // 是否返回分页数据
+	Offset    int    `form:"offset,default=0"` // 偏移量
+	GetCounts int    `form:"getcounts"`        // 只返回数量
+}
+
 // Query 查询条件
 type Query struct {
 	Table    string   // 要查询的表
@@ -198,23 +215,6 @@ func (q *Query) GetSelectMap(dataList interface{}, fields string) interface{} {
 		resMap = append(resMap, out)
 	}
 	return resMap
-}
-
-// Param 请求参数
-type Param struct {
-	Table     string `form:"table"`            // 要查询的表
-	Query     string `form:"query"`            // 条件查询
-	Or        string `form:"or"`               // 或查询
-	NOT       string `form:"not"`              // not条件查询
-	Fields    string `form:"fields"`           // 返回的字段
-	Sortby    string `form:"sortby"`           // 排序的字段
-	Order     string `form:"order"`            // 排序的方式
-	OrderBy   string `form:"order_by"`         // 排序
-	Load      string `form:"load"`             // 加载关联
-	Limit     int    `form:"limit,default=10"` // 返回的数据量
-	Page      int    `form:"page,default=1"`   // 是否返回分页数据
-	Offset    int    `form:"offset,default=0"` // 偏移量
-	GetCounts int    `form:"getcounts"`        // 只返回数量
 }
 
 func (p *Param) paramToLoad() []Load {
