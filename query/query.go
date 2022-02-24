@@ -13,37 +13,40 @@ import (
 
 // Param 请求参数
 type Param struct {
-	Table     string `form:"table"`            // 要查询的表
-	Query     string `form:"query"`            // 条件查询 格式: 字段1:值1,字段2:值2 eg: Id:1,Post.Id:2
-	Or        string `form:"or"`               // 或查询 格式: 字段1:值1,字段2:值2 eg: Id:1,Post.Id:2
-	NOT       string `form:"not"`              // not条件查询 格式: 字段1:值1,字段2:值2 eg: Id:1,Post.Id:2
-	Fields    string `form:"fields"`           // 返回的字段 格式: 字段1,字段2
-	Sortby    string `form:"sortby"`           // 排序的字段 格式: 字段1,字段2
-	Order     string `form:"order"`            // 排序的方式 enum:desc:降序,asc:升序
-	OrderBy   string `form:"order_by"`         // 排序 格式: 字段1 desc,字段2 asc
-	Load      string `form:"load"`             // 加载关联  格式: 关联字段1,关联字段2 eg: User,Posts
-	Limit     int    `form:"limit,default=10"` // 返回的数据量
-	Page      int    `form:"page,default=1"`   // 是否返回分页数据
-	Offset    int    `form:"offset,default=0"` // 偏移量
-	GetCounts int    `form:"getcounts"`        // 只返回数量
+	Table   string `form:"table"`    // 要查询的表
+	Query   string `form:"query"`    // 条件查询 格式: 字段1:值1,字段2:值2 eg: Id:1,Post.Id:2
+	Or      string `form:"or"`       // 或查询 格式: 字段1:值1,字段2:值2 eg: Id:1,Post.Id:2
+	NOT     string `form:"not"`      // not条件查询 格式: 字段1:值1,字段2:值2 eg: Id:1,Post.Id:2
+	Select  string `form:"select"`   // 选择的字段 格式: 字段1,字段2
+	Fields  string `form:"fields"`   // 返回的字段 格式: 字段1,字段2
+	Sortby  string `form:"sortby"`   // 排序的字段 格式: 字段1,字段2
+	Order   string `form:"order"`    // 排序的方式 enum:desc:降序,asc:升序
+	OrderBy string `form:"order_by"` // 排序 格式: 字段1 desc,字段2 asc
+	Load    string `form:"load"`     // 加载关联  格式: 关联字段1,关联字段2 eg: User,Posts
+
+	Limit     int `form:"limit,default=10"` // 返回的数据量
+	Page      int `form:"page,default=1"`   // 是否返回分页数据
+	Offset    int `form:"offset,default=0"` // 偏移量
+	GetCounts int `form:"getcounts"`        // 只返回数量
 }
 
 // Query 查询条件
 type Query struct {
-	Table    string   // 要查询的表
-	Select   []string // 选择字段
-	Where    []Where  // 过滤
-	Joins    []string // join查询
-	Or       []Where  // Or 或查询
-	NOT      []Where  // NOT 条件
-	Load     []Load   // load 加载
-	Order    string   // Order 排序
-	Limit    int      // 限制
-	Offset   int      // 偏移
-	Group    string   // 分组
-	Having   string   // 过滤
-	Distinct string   // 选择不同
-	Count    string   // 返回Count, T:返回count和数据,F:返回数据不返回count,count:只返回count
+	Table      string   // 要查询的表
+	Select     []string // 选择字段
+	SelectResp []string // 选择返回的字段
+	Where      []Where  // 过滤
+	Joins      []string // join查询
+	Or         []Where  // Or 或查询
+	NOT        []Where  // NOT 条件
+	Load       []Load   // load 加载
+	Order      string   // Order 排序
+	Limit      int      // 限制
+	Offset     int      // 偏移
+	Group      string   // 分组
+	Having     string   // 过滤
+	Distinct   string   // 选择不同
+	Count      string   // 返回Count, T:返回count和数据,F:返回数据不返回count,count:只返回count
 }
 
 // Where Where查询
@@ -120,6 +123,9 @@ func NewQueryByParam(param *Param, model M2MQuery) (*Query, error) {
 	if param.Fields != "" {
 		query.Select = param.paramToSelect()
 	}
+	if param.Select != "" {
+		query.SelectResp = strings.Split(param.Select, ",")
+	}
 	return &query, nil
 }
 
@@ -185,6 +191,9 @@ func (q *Query) DBSelect() func(tx *gorm.DB) *gorm.DB {
 // GetSelectMap 获取指定字段的map
 func (q *Query) GetSelectMap(dataList interface{}, fields string) interface{} {
 	selectList := strings.Split(fields, ",")
+	if len(q.SelectResp) != 0 {
+		selectList = append(selectList, q.SelectResp...)
+	}
 	if len(selectList) <= 0 {
 		return dataList
 	}
