@@ -21,10 +21,14 @@ func NewResp(respTp string, showType int) *Resp {
 
 // Error 失败数据处理
 func (r *Resp) Error(c *gin.Context, code int, err error, msg string) {
+	showType := 2 // 0 无声; 1 message.warn; 2 message.error; 4 通知; 9 页面
+	if code >= 500 {
+		showType = 4
+	}
 	res := antdResponse{
 		Success:   false,
 		ErrorCode: strconv.Itoa(code),
-		ShowType:  r.ErrShowType,
+		ShowType:  showType,
 		TraceId:   "",
 		Host:      "",
 	}
@@ -138,10 +142,14 @@ func (r *Resp) getRespType(c *gin.Context) string {
 
 // Error 错误处理
 func Error(c *gin.Context, code int, msg string) {
+	showType := 2 // 0 无声; 1 message.warn; 2 message.error; 4 通知; 9 页面
+	if code >= 500 {
+		showType = 4
+	}
 	res := antdResponse{
 		Success:      false,
 		ErrorCode:    strconv.Itoa(code),
-		ShowType:     4,
+		ShowType:     showType,
 		TraceId:      "",
 		Host:         c.ClientIP(),
 		ErrorMessage: msg,
