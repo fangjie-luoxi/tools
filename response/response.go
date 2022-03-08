@@ -38,7 +38,13 @@ func (r *Resp) Error(c *gin.Context, code int, err error, msg string) {
 	if msg != "" {
 		res.ErrorMessage = msg
 	}
-	c.JSON(code, res)
+	respTp := r.getRespType(c)
+	if respTp == "bee" {
+		c.JSON(code, res.ErrorMessage)
+
+	} else {
+		c.JSON(code, res)
+	}
 }
 
 // OK 通常成功数据处理
