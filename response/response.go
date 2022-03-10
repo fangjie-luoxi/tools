@@ -148,41 +148,74 @@ func (r *Resp) getRespType(c *gin.Context) string {
 
 // Error 错误处理
 func Error(c *gin.Context, code int, msg string) {
-	showType := 2 // 0 无声; 1 message.warn; 2 message.error; 4 通知; 9 页面
-	if code >= 500 {
-		showType = 4
+	rTp := getRespType(c)
+	if rTp == "bee" {
+		c.JSON(code, msg)
+	} else {
+		showType := 2 // 0 无声; 1 message.warn; 2 message.error; 4 通知; 9 页面
+		if code >= 500 {
+			showType = 4
+		}
+		res := antdResponse{
+			Success:      false,
+			ErrorCode:    strconv.Itoa(code),
+			ShowType:     showType,
+			TraceId:      "",
+			Host:         c.ClientIP(),
+			ErrorMessage: msg,
+		}
+		c.JSON(code, res)
 	}
-	res := antdResponse{
-		Success:      false,
-		ErrorCode:    strconv.Itoa(code),
-		ShowType:     showType,
-		TraceId:      "",
-		Host:         c.ClientIP(),
-		ErrorMessage: msg,
-	}
-	c.JSON(code, res)
 }
 
 // Success 成功返回
 func Success(c *gin.Context, code int, data interface{}) {
-	c.JSON(code, antdResponse{
-		Success: true,
-		Data:    data,
-		TraceId: "",
-		Host:    c.ClientIP(),
-	})
+	rTp := getRespType(c)
+	if rTp == "bee" {
+		c.JSON(code, data)
+	} else {
+		c.JSON(code, antdResponse{
+			Success: true,
+			Data:    data,
+			TraceId: "",
+			Host:    c.ClientIP(),
+		})
+	}
+
 }
 
 // PageOK 分页数据处理
 func PageOK(c *gin.Context, data interface{}, count int64, offset int, limit int) {
-	c.JSON(http.StatusOK, antdResponse{
-		Success:  true,
-		Data:     data,
-		Total:    count,
-		Current:  offset/limit + 1,
-		PageSize: limit,
-		ShowType: 2,
-		TraceId:  "",
-		Host:     c.ClientIP(),
-	})
+	rTp := getRespType(c)
+	if rTp == "bee" {
+		var beeRes lgPager
+		beeRes.Page = beeRes.pageUtil(count, int64(offset/limit+1), int64(limit))
+		beeRes.List = data
+		c.JSON(200, beeRes)
+	} else {
+		c.JSON(http.StatusOK, antdResponse{
+			Success:  true,
+			Data:     data,
+			Total:    count,
+			Current:  offset/limit + 1,
+			PageSize: limit,
+			ShowType: 2,
+			TraceId:  "",
+			Host:     c.ClientIP(),
+		})
+	}
+}
+
+// 获取返回的数据结构
+func getRespType(c *gin.Context) string {
+	respTp := "bee"
+	tp := c.Query("resp_type")
+	if tp != "" {
+		respTp = tp
+	}
+	tp = c.Query("resp")
+	if tp != "" {
+		respTp = tp
+	}
+	return respTp
 }
