@@ -439,8 +439,12 @@ func paramToWhere(param string, tb string) []Where {
 		if len(kv) != 2 || kv[1] == "" || strings.Contains(kv[0], ".") {
 			continue
 		}
-		if strings.Contains(kv[0], "search") {
+		if kv[0] == "search" {
 			filters = append(filters, searchToWhere(kv[1])...)
+			continue
+		}
+		if kv[0] == "dsearch" {
+			filters = append(filters, dSearchToWhere(kv[1])...)
 			continue
 		}
 		field := tb + "." + camelCase(kv[0])
@@ -484,6 +488,38 @@ type joinWhere struct {
 
 // searchToWhere 为了兼容beego
 func searchToWhere(search string) []Where {
+	var filters []Where
+	searchArr := strings.Split(search, "^")
+	searchMap := make(map[string]map[string]interface{}, len(searchArr))
+	if len(searchArr) > 0 {
+		for _, v := range searchArr {
+			searchFields := strings.Split(v, "|")
+			var keyStr []string
+			valueStr := make(map[string]interface{})
+			i := 1
+			for _, item := range searchFields {
+				filed := strings.Split(item, ">")
+				if len(filed) == 2 {
+					value := "value" + strconv.Itoa(i)
+					keyStr = append(keyStr, camelCase(filed[0])+" LIKE @"+value)
+					valueStr[value] = "%" + filed[1] + "%"
+					i += 1
+				}
+			}
+			searchMap["("+strings.Join(keyStr, " OR ")+")"] = valueStr
+		}
+	}
+	for k, v := range searchMap {
+		filters = append(filters, Where{
+			Exp:   k,
+			Value: v,
+		})
+	}
+	return filters
+}
+
+// dSearchToWhere 为了兼容beego
+func dSearchToWhere(search string) []Where {
 	var filters []Where
 	searchArr := strings.Split(search, "^")
 	searchMap := make(map[string]map[string]interface{}, len(searchArr))
