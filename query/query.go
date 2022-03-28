@@ -66,6 +66,7 @@ type Load struct {
 // M2MQuery 多对多查询
 type M2MQuery interface {
 	GetM2MJoin(string) string // 获取多对多关系
+	GetO2OJoin(string) string // 获取一对一关系
 	TableName() string        // 获取表名
 }
 
@@ -392,6 +393,12 @@ func (p *Param) joinToList(m M2MQuery, joinMap map[string][]joinWhere) []string 
 			m2mJoin := m.GetM2MJoin(joinList[i])
 			if m2mJoin != "" {
 				joinStr = m2mJoin
+				joinTb = camelCase(joinList[i])
+				break
+			}
+			o2oJoin := m.GetO2OJoin(joinList[i])
+			if o2oJoin != "" {
+				joinStr = o2oJoin
 				joinTb = camelCase(joinList[i])
 				break
 			}
