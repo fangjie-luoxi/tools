@@ -396,7 +396,7 @@ func (p *Param) joinToList(m M2MQuery, joinMap map[string][]joinWhere) []string 
 				break
 			}
 			join := camelCase(joinList[i])
-			joinStr += fmt.Sprintf("JOIN %s ON %s.id = %s.%s_id ", join, join, joinTb, join)
+			joinStr += fmt.Sprintf("JOIN `%s` ON `%s`.id = `%s`.%s_id ", join, join, joinTb, join)
 			joinTb = join
 		}
 		var termList []string
