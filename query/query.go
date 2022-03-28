@@ -87,6 +87,7 @@ func NewQueryByParam(param *Param, model M2MQuery) (*Query, error) {
 
 	var query Query
 	query.Table = tb
+	tb = "`" + tb + "`"
 	if param.Query != "" {
 		query.Where = paramToWhere(param.Query, tb)
 		query.Joins = param.paramToJoin(model)
@@ -277,7 +278,7 @@ func (p *Param) paramToLoad() []Load {
 }
 
 func (p *Param) paramToOrder() string {
-	tb := p.Table
+	tb := "`" + p.Table + "`"
 	var sortBy []string
 	var orderBy []string
 	for _, item := range strings.Split(p.Sortby, ",") {
