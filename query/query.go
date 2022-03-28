@@ -176,7 +176,7 @@ func (q *Query) DBQuery() func(tx *gorm.DB) *gorm.DB {
 func (q *Query) DBSelect() func(tx *gorm.DB) *gorm.DB {
 	var selectList []string
 	if len(q.Joins) > 0 && len(q.Select) == 0 {
-		selectList = append(selectList, q.Table+".*")
+		selectList = append(selectList, "`"+q.Table+"`"+".*")
 	}
 	if len(q.Select) > 0 {
 		selectList = append(selectList, q.Select...)
