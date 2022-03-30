@@ -473,7 +473,7 @@ func (q *Query) paramToWhere(param string, tb string) []Where {
 			}
 			opt, ok := mysqlOperators[fieldList[1]]
 			if ok {
-				field = camelCase(fieldList[0])
+				field = tb + "." + camelCase(fieldList[0])
 				factor = opt
 				exp, ok := expValue[fieldList[1]]
 				if ok {
