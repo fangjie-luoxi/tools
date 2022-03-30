@@ -89,17 +89,17 @@ func NewQueryByParam(param *Param, model M2MQuery) (*Query, error) {
 	query.Table = tb
 	tb = "`" + tb + "`"
 	if param.Query != "" {
-		query.Where = paramToWhere(param.Query, tb)
-		query.Joins = param.paramToJoin(model)
+		query.Where = query.paramToWhere(param.Query, tb)
+		query.Joins = append(query.Joins, param.paramToJoin(model)...)
 	}
 	if param.Or != "" {
-		query.Or = paramToWhere(param.Or, tb)
+		query.Or = query.paramToWhere(param.Or, tb)
 	}
 	if param.NOT != "" {
-		query.NOT = paramToWhere(param.NOT, tb)
+		query.NOT = query.paramToWhere(param.NOT, tb)
 	}
 	if param.Load != "" {
-		query.Load = param.paramToLoad()
+		query.Load = query.paramToLoad(param)
 	}
 	if param.Sortby != "" {
 		query.Order = param.paramToOrder()
@@ -134,11 +134,16 @@ func NewQueryByParam(param *Param, model M2MQuery) (*Query, error) {
 // DBQuery 封装查询的db
 func (q *Query) DBQuery() func(tx *gorm.DB) *gorm.DB {
 	return func(tx *gorm.DB) *gorm.DB {
+		joinMap := make(map[string]bool)
+		for _, join := range q.Joins {
+			if joinMap[join] {
+				continue
+			}
+			joinMap[join] = true
+			tx.Joins(join)
+		}
 		for _, filter := range q.Where {
 			tx.Where(filter.Exp, filter.Value)
-		}
-		for _, join := range q.Joins {
-			tx.Joins(join)
 		}
 		for _, or := range q.Or {
 			tx.Or(or.Exp, or.Value)
@@ -228,7 +233,7 @@ func (q *Query) GetSelectMap(dataList interface{}, fields string) interface{} {
 	return resMap
 }
 
-func (p *Param) paramToLoad() []Load {
+func (q *Query) paramToLoad(p *Param) []Load {
 	param := p.Load
 	var loadList []Load
 	for _, cond := range strings.Split(param, ",") {
@@ -261,7 +266,7 @@ func (p *Param) paramToLoad() []Load {
 						limit = limitNum
 					}
 				} else {
-					where := paramToWhere(condition, "")
+					where := q.paramToWhere(condition, "")
 					filter = append(filter, where...)
 				}
 			}
@@ -334,7 +339,7 @@ func (p *Param) paramToJoin(m M2MQuery) []string {
 			continue
 		}
 		kv := strings.SplitN(cond, ":", 2)
-		if len(kv) != 2 || kv[1] == "" {
+		if len(kv) != 2 || kv[1] == "" || kv[0] == "search" || kv[0] == "dsearch" {
 			continue
 		}
 		if strings.Contains(kv[0], ".") {
@@ -440,7 +445,7 @@ func (p *Param) joinToList(m M2MQuery, joinMap map[string][]joinWhere) []string 
 	return joinStrList
 }
 
-func paramToWhere(param string, tb string) []Where {
+func (q *Query) paramToWhere(param string, tb string) []Where {
 	var filters []Where
 	for _, cond := range strings.Split(param, ",") {
 		kv := strings.SplitN(cond, ":", 2)
@@ -448,11 +453,11 @@ func paramToWhere(param string, tb string) []Where {
 			continue
 		}
 		if kv[0] == "search" {
-			filters = append(filters, searchToWhere(kv[1])...)
+			filters = append(filters, q.searchToWhere(kv[1])...)
 			continue
 		}
 		if kv[0] == "dsearch" {
-			filters = append(filters, dSearchToWhere(kv[1])...)
+			filters = append(filters, q.dSearchToWhere(kv[1])...)
 			continue
 		}
 		field := tb + "." + camelCase(kv[0])
@@ -495,7 +500,7 @@ type joinWhere struct {
 }
 
 // searchToWhere 为了兼容beego
-func searchToWhere(search string) []Where {
+func (q *Query) searchToWhere(search string) []Where {
 	var filters []Where
 	searchArr := strings.Split(search, "^")
 	searchMap := make(map[string]map[string]interface{}, len(searchArr))
@@ -508,8 +513,22 @@ func searchToWhere(search string) []Where {
 			for _, item := range searchFields {
 				filed := strings.Split(item, ">")
 				if len(filed) == 2 {
+					filedStr := camelCase(filed[0])
+					if strings.Contains(filed[0], ".") {
+						joinList := strings.Split(filed[0], ".")
+						var joinTableList []string
+						for j := 0; j < len(joinList); j++ {
+							if j == len(joinList)-1 {
+								joinTableList = append(joinTableList, "`"+camelCase(joinList[j])+"`")
+							} else {
+								q.Joins = append(q.Joins, joinList[j])
+								joinTableList = append(joinTableList, "`"+joinList[j]+"`")
+							}
+						}
+						filedStr = strings.Join(joinTableList, ".")
+					}
 					value := "value" + strconv.Itoa(i)
-					keyStr = append(keyStr, camelCase(filed[0])+" LIKE @"+value)
+					keyStr = append(keyStr, filedStr+" LIKE @"+value)
 					valueStr[value] = "%" + filed[1] + "%"
 					i += 1
 				}
@@ -527,7 +546,7 @@ func searchToWhere(search string) []Where {
 }
 
 // dSearchToWhere 为了兼容beego
-func dSearchToWhere(search string) []Where {
+func (q *Query) dSearchToWhere(search string) []Where {
 	var filters []Where
 	searchArr := strings.Split(search, "^")
 	searchMap := make(map[string]map[string]interface{}, len(searchArr))
