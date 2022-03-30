@@ -437,7 +437,7 @@ func (p *Param) joinToList(m M2MQuery, joinMap map[string][]joinWhere) []string 
 				valueStr = "'" + valueStr + "'"
 			}
 			factor = strings.ReplaceAll(factor, "?", valueStr)
-			termList = append(termList, fmt.Sprintf("%s.%s %s", joinTb, fieldStr, factor))
+			termList = append(termList, fmt.Sprintf("`%s`.%s %s", joinTb, fieldStr, factor))
 		}
 		queryStr := fmt.Sprintf("%s AND %s", joinStr, strings.Join(termList, " AND "))
 		joinStrList = append(joinStrList, queryStr)
